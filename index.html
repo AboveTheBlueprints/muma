@@ -60,7 +60,7 @@ function look(p) {
     if (w.kidHas) out.push('那个小孩举着一个' + w.kidHas + '气球，在栏杆外头跟着你走了两步。');
     else out.push(['一个小孩站得离栏杆远远的，看着木马。', '那个小孩往前挪了一步，离栏杆近了。', '那个小孩挨着栏杆，手伸进来一截。'][w.kidNear]);
   }
-  if (!out.length) out.push(SPOTS[p] === '栏杆' ? '栏杆，没人。' : SPOTS[p] + '底下没人。');
+  // v4.2：没人的地方不写'栏杆，没人。'，空着就是空着
   return out;
 }
 function act(a) {
@@ -84,7 +84,8 @@ function act(a) {
   } else if (a === '伸手') {
     if (w.roof && !w.hand) { w.hand = w.roof; w.roof = null; ev.push('你伸手够下顶棚上那根线，' + w.hand + '气球到你手里了。'); }
     else if (w.hand && here.includes('小孩') && w.kidNear === 2) { w.kidHas = w.hand; w.hand = null; ev.push('你把线递出去，小孩一把攥住了。'); }
-    else if (w.hand && p === 0) { w.momHas = w.momHas || w.hand; w.hand = null; ev.push('你把气球递给妈妈，她替你拿着。'); }
+    else if (w.hand && p === 0 && w.momHas) ev.push('妈妈手里已经攥着一个了，把你的手推回来：你自己拿好。');
+    else if (w.hand && p === 0) { w.momHas = w.hand; w.hand = null; ev.push('你把气球递给妈妈，她替你拿着。'); }
     else if (w.hand && here.includes('小孩')) ev.push('你把线朝他递过去，他离栏杆还远，够不着。');
     else if (w.hand && here.includes('卖气球的')) ev.push('你把线朝卖气球的递过去，他在栏杆外头，够不着。');
     else if (here.includes('狗')) ev.push('你伸手想摸狗，它在栏杆外头，够不着。');
