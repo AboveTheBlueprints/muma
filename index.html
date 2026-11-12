@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>木马</title>
+<style>
+  body { background: #ece6d8; color: #2b2a26; font: 17px/1.75 "PingFang SC", "Noto Serif SC", serif; margin: 0; }
+  main { max-width: 620px; margin: 0 auto; padding: 24px 16px 120px; }
+  h1 { font-size: 22px; font-weight: normal; letter-spacing: 6px; margin: 0 0 8px; }
+  .intro { color: #5a5446; font-size: 15px; margin: 0 0 14px; }
+  #ring { position: relative; width: 300px; height: 300px; margin: 6px auto 10px; }
+  #ring .spot { position: absolute; width: 96px; margin-left: -48px; margin-top: -22px; text-align: center; font-size: 13px; line-height: 1.35; color: #6d6555; }
+  #ring .spot b { display: block; font-weight: normal; color: #2b2a26; font-size: 14px; }
+  #ring .spot.here b { background: #2b2a26; color: #f3efe4; border-radius: 3px; padding: 0 4px; display: inline-block; }
+  #ring .hub { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px dashed #b9ad94; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: #6d6555; }
+  #log p { margin: 0; }
+  #log p.head { color: #8a8170; font-size: 14px; margin-top: 10px; }
+  #log p.ev { font-weight: bold; }
+  #log p.end { margin-top: 4px; }
+  #pad { position: fixed; left: 0; right: 0; bottom: 0; background: #ece6d8ee; border-top: 1px solid #cfc6b2; padding: 10px 0 14px; text-align: center; }
+  #pad button { font: inherit; font-size: 16px; margin: 0 4px; padding: 6px 14px; border: 1px solid #8a8170; background: #f6f2e8; border-radius: 4px; cursor: pointer; }
+  #pad button:disabled { opacity: .4; cursor: default; }
+  #again { display: none; }
+</style>
+</head>
+<body>
+<main>
+<h1>木马</h1>
+<p class="intro">公园里一座小木马，你骑在白象上，转四圈就停。每一下木马转过外头一个地方，你对着那里做一样。</p>
+<div id="ring"></div>
+<div id="log"></div>
+<div id="bottom"></div>
+</main>
+<div id="pad">
+  <button data-a="坐">坐着</button><button data-a="挥手">挥手</button><button data-a="喊">喊</button><button data-a="伸手">伸手</button>
+  <button id="again">再坐一回</button>
+</div>
+<script>
+// 跟 木马.py v3 同一套规矩。从里尔克《旋转木马》来："时不时，一头白象"。
+const SPOTS = ['门口', '栏杆', '树底下', '路灯', '栏杆', '栏杆外头'];
+const LAPS = 4, COLORS = ['红', '黄', '蓝'];
+let w, log, total = 6 * LAPS;
+
+function W() {
+  return { step: 0, dog: 2, dogRun: 0, dogTired: false, seller: 3, sellerWalk: false,
+    balloons: COLORS.slice(), roof: null, hand: null, kid: 5, kidNear: 0, kidHas: null,
+    momHas: null, momWaves: 0 };
+}
+const pos = () => w.step % 6;
+function whoAt(p) {
+  const r = [];
+  if (p === 0) r.push('妈妈');
+  if (w.dog === p) r.push('狗');
+  if (w.seller === p) r.push('卖气球的');
+  if (w.kid === p) r.push('小孩');
+  return r;
+}
+function look(p) {
+  const out = [];
+  if (p === 0) out.push('妈妈站在门口，朝你这边看' + (w.momHas ? '，手里攥着一根' + w.momHas + '气球的线' : '') + '。');
+  if (w.dog === p && w.dogRun === 0) out.push(w.dogTired ? '狗趴着喘气，舌头耷拉着。' : '狗卧在太阳底下，眼睛跟着你转。');
+  if (w.seller === p) out.push(w.balloons.length ? '卖气球的攥着一把气球（' + w.balloons.join('、') + '），攥得不紧。' : '卖气球的手里空了。');
+  if (w.kid === p) {
+    if (w.kidHas) out.push('那个小孩举着一个' + w.kidHas + '气球，在栏杆外头跟着你走了两步。');
+    else out.push(['一个小孩站得离栏杆远远的，看着木马。', '那个小孩往前挪了一步，离栏杆近了。', '那个小孩挨着栏杆，手伸进来一截。'][w.kidNear]);
+  }
+  if (!out.length) out.push(SPOTS[p] === '栏杆' ? '栏杆，没人。' : SPOTS[p] + '底下没人。');
+  return out;
+}
+function act(a) {
+  const p = pos(), here = whoAt(p), ev = [];
+  if (a === '挥手') {
+    if (p === 0) { ev.push('妈妈朝你挥手。'); w.momWaves++; }
+    else if (here.includes('小孩') && w.kidHas) ev.push('小孩举着' + w.kidHas + '气球朝你晃了晃。');
+    else if (here.includes('小孩')) {
+      if (w.kidNear < 2) w.kidNear++;
+      ev.push(['', '小孩愣了一下，也朝你抬了抬手，往栏杆这边挪了一步。', '小孩朝你抬了抬手，挨到栏杆上了，手伸进来一截。'][w.kidNear]);
+    }
+    else if (here.includes('卖气球的') && w.balloons.length && !w.sellerWalk) { w.sellerWalk = true; ev.push('卖气球的当你要气球，朝门口走去了。'); }
+    else if (here.includes('狗') && w.dogRun === 0) ev.push('狗的尾巴在地上扫了两下。');
+    else ev.push('你朝没人的地方挥了挥手。');
+  } else if (a === '喊') {
+    if (here.includes('狗') && w.dogRun === 0 && !w.dogTired) { w.dogRun = 6; ev.push('狗一下跳起来，汪汪叫着跟着木马在外头跑。'); }
+    else if (here.includes('小孩') && w.kidNear > 0 && !w.kidHas) { w.kidNear = 0; ev.push('小孩吓了一跳，退回去了。'); }
+    else if (p === 0) ev.push('妈妈朝你笑了一下。');
+    else if (here.includes('卖气球的')) ev.push('卖气球的朝你笑笑，把那把气球晃了晃。');
+    else ev.push('你喊了一声，风把声音带走了。');
+  } else if (a === '伸手') {
+    if (w.roof && !w.hand) { w.hand = w.roof; w.roof = null; ev.push('你伸手够下顶棚上那根线，' + w.hand + '气球到你手里了。'); }
+    else if (w.hand && here.includes('小孩') && w.kidNear === 2) { w.kidHas = w.hand; w.hand = null; ev.push('你把线递出去，小孩一把攥住了。'); }
+    else if (w.hand && p === 0) { w.momHas = w.momHas || w.hand; w.hand = null; ev.push('你把气球递给妈妈，她替你拿着。'); }
+    else if (w.hand && here.includes('小孩')) ev.push('你把线朝他递过去，他离栏杆还远，够不着。');
+    else if (w.hand && here.includes('卖气球的')) ev.push('你把线朝卖气球的递过去，他在栏杆外头，够不着。');
+    else if (here.includes('狗')) ev.push('你伸手想摸狗，它在栏杆外头，够不着。');
+    else if (p === 0 && w.momHas) ev.push('你朝妈妈伸手要气球，她笑着摇摇头，指指木马：停了再给你。');
+    else if (here.includes('小孩') && w.kidNear === 2 && !w.kidHas) ev.push('你的手碰到他伸进来的手指头，他缩了一下，又伸回来。你手里什么也没有。');
+    else if (here.length) ev.push('你伸了伸手，手里什么也没有。');
+    else ev.push('你伸手，抓了一把风。');
+  }
+  return ev.filter(Boolean);
+}
+function world() {
+  const ev = [];
+  if (w.dogRun > 0) {
+    w.dog = (w.dog + 1) % 6; w.dogRun--;
+    const p = w.dog;
+    if (w.seller === p && w.balloons.length) {
+      const c = w.balloons.shift();
+      if (w.roof === null) { w.roof = c; ev.push('狗从卖气球的脚边窜过去，他一哆嗦撒了手，一个' + c + '气球飘上来，线挂在你头顶的铁穗子上了。'); }
+      else ev.push('狗从卖气球的脚边窜过去，他一哆嗦撒了手，一个' + c + '气球飘走了，越飘越小。');
+    } else if (p === 0) ev.push('狗从门口窜过去，妈妈"哎"了一声。');
+    else if (w.kid === p) ev.push('狗从小孩跟前窜过去，小孩笑出了声。');
+    if (w.dogRun === 0) { w.dogTired = true; ev.push('狗跑不动了，在' + SPOTS[p] + '趴下了。'); }
+  }
+  if (w.sellerWalk && w.seller !== 0) {
+    w.seller--;
+    if (w.seller === 0) {
+      w.sellerWalk = false;
+      if (w.balloons.length && !w.momHas) { const c = w.balloons.pop(); w.momHas = c; ev.push('卖气球的走到门口，妈妈买了一个' + c + '的。'); }
+      else if (w.balloons.length) ev.push('卖气球的走到门口，妈妈指指手里那个，摆摆手。');
+    }
+  }
+  if (w.roof && w.kid === pos() && w.kidNear === 2 && !w.kidHas) { w.kidHas = w.roof; w.roof = null; ev.push('头顶的' + w.kidHas + '气球转过栏杆，那个小孩跳起来一把够住了线。'); }
+  return ev;
+}
+function ending() {
+  const e = [];
+  e.push(w.momWaves ? '妈妈朝你挥了 ' + w.momWaves + ' 回手。' : '你转了四圈，妈妈在门口看了四圈，你一回也没朝她挥手。');
+  if (w.momHas) e.push('她手里有一个' + w.momHas + '气球，是给你的。');
+  if (w.hand) e.push('你手里攥着一个' + w.hand + '气球下来了。');
+  if (w.kidHas) e.push('栏杆外头那个小孩举着一个' + w.kidHas + '气球。');
+  else if (w.kidNear === 2) e.push('那个小孩还挨着栏杆，手伸在里面。');
+  else if (w.kidNear === 1) e.push('那个小孩离栏杆近了一点，还站着。');
+  else e.push('那个小孩站在栏杆外头，离得远远的。');
+  if (w.roof) e.push('顶棚上还挂着一个' + w.roof + '气球，跟木马一起停了。');
+  if (w.dogTired) e.push('狗在' + SPOTS[w.dog] + '趴着。');
+  const lost = COLORS.filter(c => !w.balloons.includes(c) && ![w.hand, w.kidHas, w.momHas, w.roof].includes(c));
+  if (lost.length) e.push('有一个' + lost.join('、') + '气球飘到天上去了。');
+  return e;
+}
+// ---- 画 ----
+const L = document.getElementById('log'), R = document.getElementById('ring');
+function line(t, cls) { const p = document.createElement('p'); p.textContent = t; if (cls) p.className = cls; L.appendChild(p); }
+function drawRing() {
+  R.innerHTML = '';
+  const cx = 150, cy = 150, r = 122, here = pos();
+  for (let i = 0; i < 6; i++) {
+    const ang = -Math.PI / 2 + i * Math.PI / 3;
+    const d = document.createElement('div');
+    d.className = 'spot' + (i === here && w.step < total ? ' here' : '');
+    d.style.left = (cx + r * Math.cos(ang)) + 'px';
+    d.style.top = (cy + r * Math.sin(ang)) + 'px';
+    const who = whoAt(i).map(x => x === '小孩' ? (w.kidHas ? '小孩🎈' : '小孩') : x === '狗' && w.dogRun > 0 ? '狗（在跑）' : x);
+    d.innerHTML = '<b>' + SPOTS[i] + '</b>' + who.join('、');
+    R.appendChild(d);
+  }
+  const hub = document.createElement('div'); hub.className = 'hub';
+  let t = '白象上的你<br>第 ' + Math.min(LAPS, Math.floor(w.step / 6) + 1) + ' 圈';
+  if (w.roof) t += '<br>头顶：' + w.roof + '气球';
+  if (w.hand) t += '<br>手里：' + w.hand + '气球';
+  hub.innerHTML = t; R.appendChild(hub);
+}
+function start() {
+  w = W(); L.innerHTML = '';
+  line('—— 你坐上去了，转到门口。', 'head');
+  look(0).forEach(t => line(t));
+  document.querySelectorAll('#pad button[data-a]').forEach(b => { b.disabled = false; b.style.display = ''; });
+  document.getElementById('again').style.display = 'none';
+  drawRing();
+}
+function press(a) {
+  if (w.step >= total) return;
+  act(a).forEach(t => line(t, 'ev'));
+  w.step++;
+  const wev = world();
+  if (w.step >= total) {
+    wev.forEach(t => line(t, 'ev'));
+    line('木马慢下来，停了。', 'head');
+    ending().forEach(t => line(t, 'end'));
+    document.querySelectorAll('#pad button[data-a]').forEach(b => { b.style.display = 'none'; });
+    document.getElementById('again').style.display = '';
+  } else {
+    line('—— 第 ' + (Math.floor(w.step / 6) + 1) + ' 圈，转到' + SPOTS[pos()] + '。', 'head');
+    wev.forEach(t => line(t, 'ev'));
+    look(pos()).forEach(t => line(t));
+  }
+  drawRing();
+  window.scrollTo(0, document.body.scrollHeight);
+}
+document.querySelectorAll('#pad button[data-a]').forEach(b => b.onclick = () => press(b.dataset.a));
+document.getElementById('again').onclick = start;
+start();
+</script>
+</body>
+</html>
