@@ -5,39 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>木马</title>
 <style>
-  body { background: #ece6d8; color: #2b2a26; font: 17px/1.75 "PingFang SC", "Noto Serif SC", serif; margin: 0; }
-  main { max-width: 620px; margin: 0 auto; padding: 24px 16px 120px; }
-  h1 { font-size: 22px; font-weight: normal; letter-spacing: 6px; margin: 0 0 8px; }
-  .intro { color: #5a5446; font-size: 15px; margin: 0 0 14px; }
-  #ring { position: relative; width: 300px; height: 300px; margin: 6px auto 10px; }
-  #ring .spot { position: absolute; width: 96px; margin-left: -48px; margin-top: -22px; text-align: center; font-size: 13px; line-height: 1.35; color: #6d6555; }
-  #ring .spot b { display: block; font-weight: normal; color: #2b2a26; font-size: 14px; }
-  #ring .spot.here b { background: #2b2a26; color: #f3efe4; border-radius: 3px; padding: 0 4px; display: inline-block; }
-  #ring .hub { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px dashed #b9ad94; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: #6d6555; }
-  #log p { margin: 0; }
-  #log p.head { color: #8a8170; font-size: 14px; margin-top: 10px; }
-  #log p.ev { font-weight: bold; }
-  #log p.end { margin-top: 4px; }
-  #pad { position: fixed; left: 0; right: 0; bottom: 0; background: #ece6d8ee; border-top: 1px solid #cfc6b2; padding: 10px 0 14px; text-align: center; }
-  #pad button { font: inherit; font-size: 16px; margin: 0 4px; padding: 6px 14px; border: 1px solid #8a8170; background: #f6f2e8; border-radius: 4px; cursor: pointer; }
-  #pad button:disabled { opacity: .4; cursor: default; }
+  body { background: #e8e1cf; color: #2b2a26; font: 16px/1.7 "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; margin: 0; }
+  main { max-width: 560px; margin: 0 auto; padding: 14px 12px 110px; }
+  h1 { font-size: 20px; font-weight: normal; letter-spacing: 6px; margin: 0 0 2px; text-align: center; }
+  #lap { text-align: center; color: #7a715f; font-size: 14px; }
+  svg { display: block; width: 100%; max-width: 440px; margin: 0 auto; }
+  #now { min-height: 96px; margin-top: 4px; }
+  #now p { margin: 0; }
+  #now p.ev { font-weight: bold; }
+  #now p.old { color: #9a917e; }
+  #pad { position: fixed; left: 0; right: 0; bottom: 0; background: #e8e1cfee; border-top: 1px solid #cfc6b2; padding: 10px 0 14px; text-align: center; }
+  #pad button { font: inherit; font-size: 16px; margin: 0 4px; padding: 7px 14px; border: 1px solid #8a8170; background: #f6f2e8; border-radius: 6px; cursor: pointer; }
+  #pad button:active { background: #e0d8c4; }
   #again { display: none; }
 </style>
 </head>
 <body>
 <main>
 <h1>木马</h1>
-<p class="intro">公园里一座小木马，你骑在白象上，转四圈就停。每一下木马转过外头一个地方，你对着那里做一样。</p>
-<div id="ring"></div>
-<div id="log"></div>
-<div id="bottom"></div>
+<div id="lap"></div>
+<svg id="s" viewBox="0 0 400 400"></svg>
+<div id="now"></div>
 </main>
 <div id="pad">
   <button data-a="坐">坐着</button><button data-a="挥手">挥手</button><button data-a="喊">喊</button><button data-a="伸手">伸手</button>
   <button id="again">再坐一回</button>
 </div>
 <script>
-// 跟 木马.py v3 同一套规矩。从里尔克《旋转木马》来："时不时，一头白象"。
+// 跟 木马.py v3 同一套规矩（下面这段是原样搬过来的）。从里尔克《旋转木马》来："时不时，一头白象"。
 const SPOTS = ['门口', '栏杆', '树底下', '路灯', '栏杆', '栏杆外头'];
 const LAPS = 4, COLORS = ['红', '黄', '蓝'];
 let w, log, total = 6 * LAPS;
@@ -139,54 +134,141 @@ function ending() {
   if (lost.length) e.push('有一个' + lost.join('、') + '气球飘到天上去了。');
   return e;
 }
+
 // ---- 画 ----
-const L = document.getElementById('log'), R = document.getElementById('ring');
-function line(t, cls) { const p = document.createElement('p'); p.textContent = t; if (cls) p.className = cls; L.appendChild(p); }
-function drawRing() {
-  R.innerHTML = '';
-  const cx = 150, cy = 150, r = 122, here = pos();
-  for (let i = 0; i < 6; i++) {
-    const ang = -Math.PI / 2 + i * Math.PI / 3;
-    const d = document.createElement('div');
-    d.className = 'spot' + (i === here && w.step < total ? ' here' : '');
-    d.style.left = (cx + r * Math.cos(ang)) + 'px';
-    d.style.top = (cy + r * Math.sin(ang)) + 'px';
-    const who = whoAt(i).map(x => x === '小孩' ? (w.kidHas ? '小孩🎈' : '小孩') : x === '狗' && w.dogRun > 0 ? '狗（在跑）' : x);
-    d.innerHTML = '<b>' + SPOTS[i] + '</b>' + who.join('、');
-    R.appendChild(d);
+const S = document.getElementById('s'), NOW = document.getElementById('now');
+const CX = 200, CY = 200, FENCE = 132, RIDE = 86;
+const BC = { '红': '#c8432f', '黄': '#e2b23a', '蓝': '#3f6fb5' };
+const deg = a => a * Math.PI / 180;
+const at = (ang, r) => [CX + r * Math.cos(deg(ang)), CY + r * Math.sin(deg(ang))];
+const spotAng = i => -90 + i * 60;
+let showAng = -90, bubbles = [];   // 白象此刻画在哪个角度；一闪的小字
+function balloon(x, y, c, len) {
+  len = len || 22;
+  return '<line x1="' + x + '" y1="' + y + '" x2="' + x + '" y2="' + (y - len) + '" stroke="#555" stroke-width="1"/>' +
+    '<ellipse cx="' + x + '" cy="' + (y - len - 9) + '" rx="8" ry="10" fill="' + BC[c] + '" stroke="#0003"/>';
+}
+function emo(x, y, t, size) { return '<text x="' + x + '" y="' + y + '" font-size="' + (size || 26) + '" text-anchor="middle" dominant-baseline="central">' + t + '</text>'; }
+function label(x, y, t) { return '<text x="' + x + '" y="' + y + '" font-size="11" fill="#8a8170" text-anchor="middle">' + t + '</text>'; }
+function draw() {
+  let g = '';
+  // 地
+  g += '<rect x="0" y="0" width="400" height="400" fill="#dcd3bc"/>';
+  // 树、路灯
+  let [tx, ty] = at(spotAng(2) - 16, 182); g += emo(tx, ty, '🌳', 40);
+  let [lx, ly] = at(spotAng(3) + 15, 170); g += '<line x1="' + lx + '" y1="' + (ly + 12) + '" x2="' + lx + '" y2="' + (ly - 22) + '" stroke="#555" stroke-width="3"/><circle cx="' + lx + '" cy="' + (ly - 25) + '" r="6" fill="#f3e3a1" stroke="#555"/>';
+  // 朝着的那一处：一道淡光
+  const [ex, ey] = at(showAng, RIDE);
+  const fa = spotAng(pos() % 6);
+  if (w.step < total) {
+    const [p1x, p1y] = at(fa - 14, 178), [p2x, p2y] = at(fa + 14, 178);
+    g += '<polygon points="' + ex + ',' + ey + ' ' + p1x + ',' + p1y + ' ' + p2x + ',' + p2y + '" fill="#fff6c8" opacity=".55"/>';
   }
-  const hub = document.createElement('div'); hub.className = 'hub';
-  let t = '白象上的你<br>第 ' + Math.min(LAPS, Math.floor(w.step / 6) + 1) + ' 圈';
-  if (w.roof) t += '<br>头顶：' + w.roof + '气球';
-  if (w.hand) t += '<br>手里：' + w.hand + '气球';
-  hub.innerHTML = t; R.appendChild(hub);
+  // 栏杆（门口留个口子）
+  for (let a = -90 + 14; a < 270 - 14; a += 6) {
+    const [x1, y1] = at(a, FENCE), [x2, y2] = at(a + 6, FENCE);
+    g += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="#7b5a3a" stroke-width="3"/>';
+    g += '<line x1="' + x1 + '" y1="' + (y1 - 0) + '" x2="' + x1 + '" y2="' + (y1 - 7) + '" stroke="#7b5a3a" stroke-width="2"/>';
+  }
+  // 木马的底盘、顶棚边
+  g += '<circle cx="' + CX + '" cy="' + CY + '" r="104" fill="#efe4c8" stroke="#b39b6c" stroke-width="2"/>';
+  for (let a = 0; a < 360; a += 15) { const [x, y] = at(a + (showAng % 15), 104); g += '<circle cx="' + x + '" cy="' + y + '" r="2.5" fill="#c9a24b"/>'; }
+  g += '<circle cx="' + CX + '" cy="' + CY + '" r="16" fill="#c9a24b"/>';
+  // 别的木马（空着，跟着转）
+  for (let k = 1; k < 6; k++) { const [x, y] = at(showAng + k * 60, RIDE); g += emo(x, y, '🐎', 22).replace('<text', '<text opacity=".45"'); }
+  // 你：白象
+  g += '<circle cx="' + ex + '" cy="' + ey + '" r="19" fill="#fff" stroke="#2b2a26" stroke-width="2"/>' + emo(ex, ey + 1, '🐘', 24);
+  if (w.roof) g += balloon(ex, ey - 22, w.roof, 26);
+  if (w.hand) g += balloon(ex + 12, ey - 8, w.hand, 22);
+  // 妈妈
+  let [mx, my] = at(spotAng(0), 162); g += emo(mx, my, '👩') + label(mx, my + 24, '妈妈');
+  if (w.momHas) g += balloon(mx + 14, my - 6, w.momHas, 16);
+  // 卖气球的
+  let [sx, sy] = at(spotAng(w.seller), 162); g += emo(sx, sy, '🧑') + label(sx, sy + 24, '卖气球的');
+  w.balloons.forEach((c, i) => { g += balloon(sx - 10 + i * 10, sy - 8, c, 18 + (i % 2) * 6); });
+  // 狗
+  if (w.dogRun > 0) { let [dx, dy] = at(showAng - 17, 118); g += emo(dx, dy, '🐕', 22); }
+  else { let [dx, dy] = at(spotAng(w.dog), 160); g += emo(dx, dy, w.dogTired ? '🐕' : '🐕', 24) + (w.dogTired ? label(dx, dy + 22, '趴着喘') : label(dx, dy + 22, '狗')); }
+  // 没票的小孩：离栏杆多远就画多远
+  const KR = [196, 168, 143], kr = KR[w.kidNear];
+  for (let n = 0; n < w.kidNear; n++) { // 他走过来的脚印
+    for (let f = 0; f < 3; f++) { const [fx, fy] = at(spotAng(w.kid) + (f % 2 ? 3 : -3), KR[n] - 6 - f * 7); g += '<ellipse cx="' + fx + '" cy="' + fy + '" rx="2.2" ry="3.2" fill="#9c8f74" opacity=".6"/>'; }
+  }
+  let [kx, ky] = at(spotAng(w.kid), kr); g += emo(kx, ky, '🧒');
+  if (w.kidNear === 2 && !w.kidHas) { const [hx, hy] = at(spotAng(w.kid), FENCE - 12), [h0x, h0y] = at(spotAng(w.kid), kr - 12); g += '<line x1="' + h0x + '" y1="' + h0y + '" x2="' + hx + '" y2="' + hy + '" stroke="#d9a07a" stroke-width="4" stroke-linecap="round"/>'; }
+  if (w.kidHas) g += balloon(kx + 12, ky - 8, w.kidHas, 18);
+  g += label(kx, ky + 24, '没票的小孩');
+  // 一闪的小字
+  bubbles.forEach(b => { g += '<text x="' + b.x + '" y="' + b.y + '" font-size="15" text-anchor="middle" fill="#2b2a26" font-weight="bold">' + b.t + '</text>'; });
+  S.innerHTML = g;
+  document.getElementById('lap').textContent = w.step < total ? '第 ' + (Math.floor(w.step / 6) + 1) + ' 圈，一共四圈' : '停了';
+}
+function say(lines, old) {
+  const keep = NOW.querySelectorAll('p.cur');
+  NOW.innerHTML = '';
+  if (old) keep.forEach(p => { p.className = 'old'; NOW.appendChild(p); });
+  lines.forEach(([t, c]) => { const p = document.createElement('p'); p.textContent = t; p.className = 'cur' + (c ? ' ' + c : ''); NOW.appendChild(p); });
+}
+function bubble(who, t) {
+  let ang, r = 150;
+  if (who === '妈妈') ang = spotAng(0);
+  else if (who === '小孩') ang = spotAng(w.kid);
+  else if (who === '狗') ang = spotAng(w.dog);
+  else if (who === '卖气球的') ang = spotAng(w.seller);
+  else { const [x, y] = at(showAng, RIDE); bubbles.push({ x: x + 34, y: y + 4, t: t }); return; }
+  const [x, y] = at(ang, r);
+  bubbles.push({ x: x, y: y - 26, t: t });
 }
 function start() {
-  w = W(); L.innerHTML = '';
-  line('—— 你坐上去了，转到门口。', 'head');
-  look(0).forEach(t => line(t));
-  document.querySelectorAll('#pad button[data-a]').forEach(b => { b.disabled = false; b.style.display = ''; });
+  w = W(); showAng = -90; bubbles = [];
+  document.querySelectorAll('#pad button[data-a]').forEach(b => { b.style.display = ''; });
   document.getElementById('again').style.display = 'none';
-  drawRing();
+  say([['你骑在白象上，木马转起来了。每一下转过外头一个地方，你对着亮着的那一处做一样。'], ...look(0).map(t => [t])]);
+  draw();
 }
+let busy = false;
 function press(a) {
-  if (w.step >= total) return;
-  act(a).forEach(t => line(t, 'ev'));
-  w.step++;
-  const wev = world();
-  if (w.step >= total) {
-    wev.forEach(t => line(t, 'ev'));
-    line('木马慢下来，停了。', 'head');
-    ending().forEach(t => line(t, 'end'));
-    document.querySelectorAll('#pad button[data-a]').forEach(b => { b.style.display = 'none'; });
-    document.getElementById('again').style.display = '';
-  } else {
-    line('—— 第 ' + (Math.floor(w.step / 6) + 1) + ' 圈，转到' + SPOTS[pos()] + '。', 'head');
-    wev.forEach(t => line(t, 'ev'));
-    look(pos()).forEach(t => line(t));
-  }
-  drawRing();
-  window.scrollTo(0, document.body.scrollHeight);
+  if (busy || w.step >= total) return;
+  const p = pos(), here = whoAt(p);
+  const ev = act(a);
+  bubbles = [];
+  const mark = { '挥手': '👋', '喊': '喂！', '伸手': '✋', '坐': '' }[a];
+  if (mark) bubble('你', mark);
+  ev.forEach(t => {
+    if (t.startsWith('妈妈朝你挥手')) bubble('妈妈', '👋');
+    if (t.startsWith('小孩') && t.includes('抬了抬手')) bubble('小孩', '👋');
+    if (t.startsWith('狗一下跳起来')) bubble('狗', '汪！');
+  });
+  draw();
+  busy = true;
+  setTimeout(() => {
+    bubbles = [];
+    w.step++;
+    const wev = world();
+    // 白象顺着圈转过去
+    const from = showAng, to = -90 + w.step * 60, t0 = performance.now();
+    function frame(now) {
+      const k = Math.min(1, (now - t0) / 450);
+      showAng = from + (to - from) * (1 - Math.pow(1 - k, 2));
+      draw();
+      if (k < 1) return requestAnimationFrame(frame);
+      busy = false;
+      const out = ev.map(t => [t, 'ev']);
+      if (w.step >= total) {
+        wev.forEach(t => out.push([t, 'ev']));
+        out.push(['木马慢下来，停了。']);
+        ending().forEach(t => out.push([t]));
+        document.querySelectorAll('#pad button[data-a]').forEach(b => { b.style.display = 'none'; });
+        document.getElementById('again').style.display = '';
+      } else {
+        wev.forEach(t => out.push([t, 'ev']));
+        look(pos()).forEach(t => out.push([t]));
+      }
+      say(out);
+      draw();
+    }
+    requestAnimationFrame(frame);
+  }, a === '坐' ? 60 : 380);
 }
 document.querySelectorAll('#pad button[data-a]').forEach(b => b.onclick = () => press(b.dataset.a));
 document.getElementById('again').onclick = start;
