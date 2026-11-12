@@ -78,6 +78,7 @@ function act(a) {
   } else if (a === '喊') {
     if (here.includes('狗') && w.dogRun === 0 && !w.dogTired) { w.dogRun = 6; ev.push('狗一下跳起来，汪汪叫着跟着木马在外头跑。'); }
     else if (here.includes('小孩') && w.kidNear > 0 && !w.kidHas) { w.kidNear = 0; ev.push('小孩吓了一跳，退回去了。'); }
+    else if (here.includes('狗') && w.dogTired) ev.push('狗抬了抬眼皮，尾巴在地上扫了一下，没起来。');
     else if (p === 0) ev.push('妈妈朝你笑了一下。');
     else if (here.includes('卖气球的')) ev.push('卖气球的朝你笑笑，把那把气球晃了晃。');
     else ev.push('你喊了一声，风把声音带走了。');
@@ -188,7 +189,8 @@ function draw() {
   let [sx, sy] = at(spotAng(w.seller) + (w.seller === 0 ? 26 : 0), 162); g += emo(sx, sy, '🧑') + label(sx, sy + 24, '卖气球的');
   w.balloons.forEach((c, i) => { g += balloon(sx - 10 + i * 10, sy - 8, c, 18 + (i % 2) * 6); });
   // 狗
-  if (w.dogRun > 0) { let [dx, dy] = at(showAng - 17, 150); g += emo(dx, dy, '🐕', 22); }
+  // 狗跑起来时跑到你朝着的那一处，就画进那道光里（马网2：按之前不知道对着谁）
+  if (w.dogRun > 0) { let [dx, dy] = at(showAng + (w.dog === pos() ? 9 : -17), 150); g += emo(dx, dy, '🐕', 22); }
   else { const crowd = w.dog === 0 || w.dog === w.seller || w.dog === w.kid; let [dx, dy] = at(spotAng(w.dog) + (crowd ? -24 : 0), 160); g += emo(dx, dy, w.dogTired ? '🐕' : '🐕', 24) + (w.dogTired ? label(dx, dy + 22, '趴着喘') : label(dx, dy + 22, '狗')); }
   // 没票的小孩：离栏杆多远就画多远
   const KR = [196, 168, 143], kr = KR[w.kidNear];
@@ -242,6 +244,7 @@ function press(a) {
     if (t.startsWith('妈妈朝你笑')) bubble('妈妈', '🙂');
     if (t.startsWith('卖气球的朝你笑')) bubble('卖气球的', '🙂');
     if (t.startsWith('狗的尾巴')) bubble('狗', '〰');
+    if (t.startsWith('狗抬了抬眼皮')) bubble('狗', '〰');
     if (t.startsWith('小孩吓了一跳')) bubble('小孩', '！');
     if (t.startsWith('小孩举着')) bubble('小孩', '🎈');
   });
