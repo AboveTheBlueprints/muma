@@ -184,11 +184,11 @@ function draw() {
   let [mx, my] = at(spotAng(0), 162); g += emo(mx, my, '👩') + label(mx, my + 24, '妈妈');
   if (w.momHas) g += balloon(mx + 14, my - 6, w.momHas, 16);
   // 卖气球的
-  let [sx, sy] = at(spotAng(w.seller), 162); g += emo(sx, sy, '🧑') + label(sx, sy + 24, '卖气球的');
+  let [sx, sy] = at(spotAng(w.seller) + (w.seller === 0 ? 26 : 0), 162); g += emo(sx, sy, '🧑') + label(sx, sy + 24, '卖气球的');
   w.balloons.forEach((c, i) => { g += balloon(sx - 10 + i * 10, sy - 8, c, 18 + (i % 2) * 6); });
   // 狗
-  if (w.dogRun > 0) { let [dx, dy] = at(showAng - 17, 118); g += emo(dx, dy, '🐕', 22); }
-  else { let [dx, dy] = at(spotAng(w.dog), 160); g += emo(dx, dy, w.dogTired ? '🐕' : '🐕', 24) + (w.dogTired ? label(dx, dy + 22, '趴着喘') : label(dx, dy + 22, '狗')); }
+  if (w.dogRun > 0) { let [dx, dy] = at(showAng - 17, 150); g += emo(dx, dy, '🐕', 22); }
+  else { const crowd = w.dog === 0 || w.dog === w.seller || w.dog === w.kid; let [dx, dy] = at(spotAng(w.dog) + (crowd ? -24 : 0), 160); g += emo(dx, dy, w.dogTired ? '🐕' : '🐕', 24) + (w.dogTired ? label(dx, dy + 22, '趴着喘') : label(dx, dy + 22, '狗')); }
   // 没票的小孩：离栏杆多远就画多远
   const KR = [196, 168, 143], kr = KR[w.kidNear];
   for (let n = 0; n < w.kidNear; n++) { // 他走过来的脚印
@@ -214,8 +214,8 @@ function bubble(who, t) {
   if (who === '妈妈') ang = spotAng(0);
   else if (who === '小孩') ang = spotAng(w.kid);
   else if (who === '狗') ang = spotAng(w.dog);
-  else if (who === '卖气球的') ang = spotAng(w.seller);
-  else { const [x, y] = at(showAng, RIDE); bubbles.push({ x: x + 34, y: y + 4, t: t }); return; }
+  else if (who === '卖气球的') ang = spotAng(w.seller) + (w.seller === 0 ? 26 : 0);
+  else { const [x, y] = at(showAng, RIDE - 36); bubbles.push({ x: x, y: y + 5, t: t }); return; }   // 你的那一声画在白象往里那边，不跟外头的人挤
   const [x, y] = at(ang, r);
   bubbles.push({ x: x, y: y - 26, t: t });
 }
@@ -226,7 +226,7 @@ function start() {
   say([['你骑在白象上，木马转起来了。每一下转过外头一个地方，你对着亮着的那一处做一样。'], ...look(0).map(t => [t])]);
   draw();
 }
-let busy = false;
+let busy = false; const PAD = document.getElementById('pad');
 function press(a) {
   if (busy || w.step >= total) return;
   const p = pos(), here = whoAt(p);
@@ -238,9 +238,15 @@ function press(a) {
     if (t.startsWith('妈妈朝你挥手')) bubble('妈妈', '👋');
     if (t.startsWith('小孩') && t.includes('抬了抬手')) bubble('小孩', '👋');
     if (t.startsWith('狗一下跳起来')) bubble('狗', '汪！');
+    if (t.startsWith('妈妈朝你笑')) bubble('妈妈', '🙂');
+    if (t.startsWith('卖气球的朝你笑')) bubble('卖气球的', '🙂');
+    if (t.startsWith('狗的尾巴')) bubble('狗', '〰');
+    if (t.startsWith('小孩吓了一跳')) bubble('小孩', '！');
+    if (t.startsWith('小孩举着')) bubble('小孩', '🎈');
   });
   draw();
-  busy = true;
+  if (ev.length) say(ev.map(t => [t, 'ev']));   // 先在原地看见它怎么回你，光还照着那儿
+  busy = true; PAD.style.opacity = '.45';   // 转着的时候按钮淡下去，按了也不算
   setTimeout(() => {
     bubbles = [];
     w.step++;
@@ -252,7 +258,7 @@ function press(a) {
       showAng = from + (to - from) * (1 - Math.pow(1 - k, 2));
       draw();
       if (k < 1) return requestAnimationFrame(frame);
-      busy = false;
+      busy = false; PAD.style.opacity = '';
       const out = ev.map(t => [t, 'ev']);
       if (w.step >= total) {
         wev.forEach(t => out.push([t, 'ev']));
@@ -268,7 +274,7 @@ function press(a) {
       draw();
     }
     requestAnimationFrame(frame);
-  }, a === '坐' ? 60 : 380);
+  }, a === '坐' ? 60 : 1100);
 }
 document.querySelectorAll('#pad button[data-a]').forEach(b => b.onclick = () => press(b.dataset.a));
 document.getElementById('again').onclick = start;
